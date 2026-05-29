@@ -2,12 +2,99 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 // Get a free hosted Postgres database in seconds: `npx create-db`
-
+//Here we will be writing all ou schema for our application where schema means our table "here in our primary database" 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
 }
+
+model User {
+  id       Int   @id @default(autoincrement()) @unique
+  email    String   @unique
+  password String
+  deleted  Boolean  @default(false)
+  credits            Int      @default(0)
+  apiKeys             ApiKey[] 
+  conversations       Conversation[]  //represnts the mapping with this table and other table Conversation
+  onrampTransactions  OnrampTransaction[]
+}
+
+model ApiKey {
+  id       Int   @id @default(autoincrement()) 
+  userId   Int
+  name     String
+  apiKey   String   @unique
+  disabled Boolean  @default(false)
+  deleted  Boolean  @default(false)
+  user          User           @relation(fields: [userId], references: [id])
+  conversations Conversation[]
+}
+
+
+model Company {
+  id      Int  @id @default(autoincrement()) 
+  name    String
+  website String
+
+  models Model[]
+}
+
+model Model {
+  id        Int  @id @default (autoincrement()) 
+  name      String
+  slug      String
+  companyId Int
+
+  company              Company               @relation(fields: [companyId], references: [id])
+  modelProviderMappings ModelProviderMapping[]
+}
+
+model Provider {
+  id      Int @id @default(autoincrement()) 
+  name    String
+  website String
+
+  modelProviderMappings ModelProviderMapping[]
+}
+
+model ModelProviderMapping {
+  id              Int @id @default(autoincrement()) 
+  modelId         Int 
+  providerId      Int
+  inputTokenCost  Int
+  outputTokenCost Int
+
+  model         Model        @relation(fields: [modelId], references: [id])
+  provider      Provider     @relation(fields: [providerId], references: [id])
+  conversations Conversation[]
+}
+
+model Conversation {
+  id                    Int @id @default(autoincrement()) 
+  userId                Int
+  apiKeyId              Int
+  modelProviderMappingId Int
+  input                 String
+  output                String
+  inputTokenCount       Int
+  outputTokenCount      Int
+
+  user                 User                 @relation(fields: [userId], references: [id])
+  apiKey               ApiKey               @relation(fields: [apiKeyId], references: [id])
+  modelProviderMapping ModelProviderMapping @relation(fields: [modelProviderMappingId], references: [id])
+}
+
+model OnrampTransaction {
+  id      Int @id @default(autoincrement()) 
+  userId  Int
+  amount  Float
+  status  String
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+//use prisma visulazier to visualize the schema open the visualizer and just upload the code of schema.prisma and it will give you the visual representation of the schema
